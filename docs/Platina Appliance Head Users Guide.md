@@ -755,7 +755,7 @@ Fan Speed
     vmon.poweroff.events:
     1970-01-01T23:30:34Z.1970-01-01T23:32:28Z.1970-01-01T23:40:17Z.1970-01-01T23:50:54Z.1970-01-01T23:52:04Z
 
-<a name="updates"/>
+<a name="softwareandfirmwareupdates"/>
 
 # Software and Firmware Updates
 
