@@ -40,19 +40,14 @@
       1. [ PSU Information](#psuinformation)
       1. [ Power Monitor Information](#powermonitorinformation)
 1. [ Software and Firmware Updates](#softwareandfirmwareupdates)
-   1. [ Using GOES upgrade (recommended)](#usinggoesupgraderecommended)
       1. [ Upgrading Coreboot](#upgradingcoreboot)
       1. [ Upgrading Linux Kernel](#upgradinglinuxkernel)
       1. [ Upgrading GOES](#upgradinggoes)
       1. [ Upgrading Coreboot, Linux Kernel, and GOES in one command](#upgradingcorebootlinuxkernelandgoesinonecommand)
       1. [ Updating the BMC Firmware](#updatingthebmcfirmware)
-   1. [ Manual upgrade (not recommended)](#manualupgradenotrecommended)
-      1. [ Download the flash ROM and Coreboot images](#downloadtheflashromandcorebootimages)
-      1. [ Install Coreboot](#installcoreboot)
-      1. [ Update the Linux Kernel](#updatethelinuxkernel)
-      1. [ Update GOES](#updategoes)
-   1. [ Additional Information](#additionalinformation)
-      1. [ Getting to the BMC Console](#gettingtothebmcconsole)
+      1. [ Additional Information](#additionalinformation)
+         1. [ Download the flash ROM and Coreboot images](#downloadtheflashromandcorebootimages)
+         1. [ Getting to the BMC Console](#gettingtothebmcconsole)
 1. [ Support](#support)
 
 
@@ -764,25 +759,28 @@ Fan Speed
 
 # Software and Firmware Updates
 
-<a name="using-goes-upgrade"/>
-
-## Using GOES upgrade (recommended)
-
 ### Upgrading Coreboot
 
-    sudo goes upgrade -c -v LATEST -s downloads.platinasystems.com
+```
+wget http://downloads.platinasystems.com/LATEST/coreboot-platina-mk1.rom
+/usr/local/sbin/flashrom -p internal:boardmismatch=force -l /usr/local/share/flashrom/layouts/platina-mk1.xml -i bios -r coreboot-platina-mk1.rom -A -V
+```
 
 ### Upgrading Linux Kernel
 
-    sudo goes upgrade -k -v LATEST -s downloads.platinasystems.com
+```
+sudo bash
+wget http://downloads.platinasystems.com/LATEST/linux-image-platina-mk1-4.13.0.deb
+dpkg -i linux-image-platina-mk1-4.13.0.deb
+```
 
 ### Upgrading GOES
 
-    sudo goes upgrade -g -v LATEST -s downloads.platinasystems.com
-
-### Upgrading Coreboot, Linux Kernel, and GOES in one command
-
-    sudo goes upgrade -a -v LATEST -s downloads.platinasystems.com
+```
+sudo bash
+wget http://downloads.platinasystems.com/LATEST/goes-platina-mk1
+./goes-platina-mk1 install
+```
 
 ### Updating the BMC Firmware
 
@@ -802,9 +800,9 @@ This will automatically retrieve the upgrade file (platina-mk1-bmc.zip) from htt
 
 ---
 
-## Manual upgrade (not recommended)
+## Additional Information
 
-### Download the flash ROM and Coreboot images
+### Download the flash ROM and Coreboot images (if /usr/local/sbin/flashrom doesn't already exist)
 
 To retrieve the flash ROM, execute the following Linux commands:
 
@@ -817,37 +815,8 @@ chmod 655 flashrom
 mv flashrom /usr/local/sbin/flashrom
 mkdir -p /usr/local/share/flashrom/layouts
 mv platina-mk1.xml /usr/local/share/flashrom/layouts
-rm coreboot-platina-mk1.rom
-wget http://downloads.platinasystems.com/LATEST/coreboot-platina-mk1.rom
-```
 
-### Install Coreboot
-
-To update the boot loader, execute the following Linux commands on the host:
 ```
-/usr/local/share/flashrom/layouts/platina-mk1.xml -i bios -w coreboot-platina-mk1.rom -A -V
-```
-
-### Update the Linux Kernel
-
-To update the Linux kernel, execute the following Linux commands on the host:
-```
-sudo bash
-wget http://downloads.platinasystems.com/LATEST/linux-image-platina-mk1-4.13.0.deb
-dpkg -i linux-image-platina-mk1-4.13.0.deb
-```
-
-### Update GOES
-
-To update the Platina GOES binary, execute the following Linux commands on the host:
-```
-sudo bash
-wget http://downloads.platinasystems.com/LATEST/goes-platina-mk1-installer
-chmod +x goes-platina-mk1-installer
-./goes-platina-mk1-installer
-```
-
-## Additional Information
 
 ### Getting to the BMC Console
 
