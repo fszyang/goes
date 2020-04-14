@@ -27,7 +27,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/platinasystems/redis"
+	"github.com/platinasystems/goes/external/redis"
 )
 
 const (
