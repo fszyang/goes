@@ -18,9 +18,13 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 	"unicode/utf8"
 
 	"github.com/platinasystems/goes/cmd"
@@ -581,9 +585,11 @@ func (g *Goes) Main(args ...string) error {
 			defer WG.Done()
 			select {
 			case <-quit:
+				fmt.Println("<----------received quit")
 			case t := <-sig:
-				fmt.Println(t)
+				fmt.Printf("<----------received %v go-routines:%v\n", t, runtime.NumGoroutine())
 				if t == syscall.SIGTERM {
+					time.Sleep(time.Millisecond)
 					close(Stop)
 					method, found := v.(io.Closer)
 					if found {
@@ -594,8 +600,18 @@ func (g *Goes) Main(args ...string) error {
 			signal.Stop(sig)
 		}()
 		err := v.Main(args[1:]...)
+		fmt.Println("close quit ------------>")
 		close(quit)
+		//time.Sleep(500 * time.Millisecond)
+		fmt.Printf("WG.Wait() --------- go-routines:%v\n", runtime.NumGoroutine())
 		WG.Wait()
+		fmt.Printf("Wait done --------- err: %v go-routines:%v\n", err, runtime.NumGoroutine())
+		if runtime.NumGoroutine() > 2 {
+			stack := debug.Stack()
+			os.Stdout.Write(stack)
+			pprof.Lookup("goroutine").WriteTo(os.Stdout, 2)
+			os.Stdout.Sync()
+		}
 		return err
 	}
 

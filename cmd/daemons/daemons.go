@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime/debug"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"syscall"
@@ -79,13 +81,16 @@ func (d *Daemons) start(restarts int, args ...string) {
 	d.pids = append(d.pids, p.Process.Pid)
 	d.cmdsByPid[p.Process.Pid] = p
 	d.mutex.Unlock()
-	go log.LinesFrom(rout, id, "info")
-	go log.LinesFrom(rerr, id, "err")
+	go log.LinesFrom(rout, wout, id, "info")
+	go log.LinesFrom(rerr, wout, id, "err")
 	go func(p *exec.Cmd, wout, werr *os.File, args ...string) {
+		for d.cmd(p.Process.Pid) != nil {
+		}
+		fmt.Fprintln(wout, "dead!!")
 		if err := p.Wait(); err != nil {
 			fmt.Fprintln(werr, err)
 		} else {
-			fmt.Fprintln(wout, "done")
+			fmt.Fprintln(wout, "done!!")
 		}
 		if d.cmd(p.Process.Pid) != nil {
 			d.del(p.Process.Pid)
@@ -103,6 +108,13 @@ func (d *Daemons) start(restarts int, args ...string) {
 		wout.Close()
 		werr.Close()
 	}(p, wout, werr, args...)
+	if false {
+		stack := debug.Stack()
+		os.Stdout.Write(stack)
+		pprof.Lookup("goroutine").WriteTo(os.Stdout, 2)
+		os.Stdout.Sync()
+		fmt.Fprintln(wout, string(stack))
+	}
 }
 
 func (d *Daemons) List(args struct{}, reply *string) error {
@@ -213,14 +225,14 @@ func (d *Daemons) stop(pids []int) error {
 	for _, pid := range pids {
 		if p := d.cmd(pid); p != nil {
 			procdns[pid] = fmt.Sprint("/proc/", pid)
-			log.Print("daemon", "info", "stopping: ", p.Args)
+			log.Print("daemon", "info", "stopping: SIGTERM ", p.Args, pid)
 			d.del(pid)
 			p.Process.Signal(syscall.SIGTERM)
 		}
 	}
 	const (
 		period = 100 * time.Millisecond
-		limit  = 5 * time.Second
+		limit  = 3 * time.Second
 	)
 	for t := time.Duration(0); t < limit; t += period {
 		for pid, procdn := range procdns {
@@ -233,10 +245,14 @@ func (d *Daemons) stop(pids []int) error {
 		}
 		time.Sleep(period)
 	}
-	for pid := range procdns {
-		syscall.Kill(pid, syscall.SIGKILL)
+	for pid, path := range procdns {
+		if s, err := os.Stat(path); !os.IsNotExist(err) {
+			log.Print(fmt.Sprintf("stat %+v err %v", s, err))
+			log.Print("kill ", pid)
+			syscall.Kill(pid, syscall.SIGKILL)
+		}
 	}
-	for t := time.Duration(0); t < limit; t += period {
+	for t := time.Duration(0); t < 3*limit; t += period {
 		for pid, procdn := range procdns {
 			if _, err := os.Stat(procdn); os.IsNotExist(err) {
 				delete(procdns, pid)
@@ -248,6 +264,7 @@ func (d *Daemons) stop(pids []int) error {
 		time.Sleep(period)
 	}
 	for pid, _ := range procdns {
+		log.Print("won't die", pid)
 		return fmt.Errorf("%d won't die", pid)
 	}
 	return nil

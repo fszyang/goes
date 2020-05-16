@@ -170,7 +170,8 @@ func NewRateLimited(n uint32, d time.Duration) *RateLimited {
 func Tee(w io.Writer) { tee.w = w }
 
 // log lines from the given reader until EOF or error.
-func LinesFrom(rc io.ReadCloser, id, priority string) {
+func LinesFrom(rc io.ReadCloser, wout io.Writer, id, priority string) {
+	fmt.Fprintln(wout, "starting LinesFrom ...............")
 	defer rc.Close()
 	pri, found := PriorityByName[priority]
 	if !found {
@@ -180,6 +181,7 @@ func LinesFrom(rc io.ReadCloser, id, priority string) {
 	for scan.Scan() {
 		log(pri|syslog.LOG_DAEMON, id, scan.Text())
 	}
+	fmt.Fprintln(wout, "closing LinesFrom ...............")
 }
 
 // The default level is: Debug, User. Upto the first two arguments may change
